@@ -22,20 +22,6 @@ btrfs subvolume snapshot -r /home ${snapDir}/home-current
 btrfs subvolume snapshot -r / ${snapDir}/root-current
 btrfs subvolume snapshot -r /var/lib/plexmediaserver ${snapDir}/plex-current
 
-# Also snapshot as dated
-#btrfs subvolume snapshot -r ${snapDir}/home-current ${snapDir}/${homeSnapName}
-#btrfs subvolume snapshot -r ${snapDir}/root-current ${snapDir}/${rootSnapName}
-#btrfs subvolume snapshot -r ${snapDir}/plex-current ${snapDir}/${plexSnapName}
-#btrfs subvolume snapshot -r ${raidDir}/public ${raidSnapDir}/${publicSnapName}
-#btrfs subvolume snapshot -r ${raidDir}/tyler ${raidSnapDir}/${tylerSnapName}
-#btrfs subvolume snapshot -r ${raidDir}/meagan ${raidSnapDir}/${meaganSnapName}
-
-
-# Rsync the "current" home backup
-# rsync -avh --delete ${snapDir}/home-current $backupDir
-# rsync -avh --delete ${snapDir}/root-current $backupDir
-
-
 echo "Creating Root Tarball..."
 cd $snapDir
 tar \
@@ -53,10 +39,6 @@ echo "Creating tyler Tarball..."
 cd home-current/
 tar --exclude='tyler/.cache' -caf ${snapDir}/tyler.tar.xz tyler
 mv ${snapDir}/tyler.tar.xz ${backupDir}/
-
-#echo "Creating retroarch Tarball..."
-#tar --exclude='retroarch/.cache' -caf ${snapDir}/retroarch.tar.xz retroarch
-#mv ${snapDir}/retroarch.tar.xz ${backupDir}/
 
 echo "Creating meagan Tarball..."
 tar -caf ${snapDir}/meagan.tar.xz meagan
