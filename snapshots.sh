@@ -1,6 +1,6 @@
 #!/bin/bash
 # Set folder names
-timeStamp=$(date +'%Y%m%d-%T')
+timeStamp=$(date '+%Y-%m-%d_%H-%M-%S')
 homeSnapName=home-${timeStamp}
 rootSnapName=root-${timeStamp}
 plexSnapName=plex-${timeStamp}
@@ -17,32 +17,57 @@ backupDir=/mnt/RAID/tyler/fileserver
 export XZ_DEFAULTS="-T 3"
 
 
-#Snapshot into "current" folder
+# Snapshot into "current" folder
 btrfs subvolume snapshot -r /home ${snapDir}/home-current
 btrfs subvolume snapshot -r / ${snapDir}/root-current
-btrfs subvolume snapshot -r /var/lib/plexmediaserver ${snapDir}/plex-current
+btrfs subvolume snapshot -r /mnt/diskRoot/plexmediaserver/ ${snapDir}/plex-current
+
+# Also snapshot as dated
+btrfs subvolume snapshot -r ${snapDir}/home-current ${snapDir}/${homeSnapName}
+btrfs subvolume snapshot -r ${snapDir}/root-current ${snapDir}/${rootSnapName}
+btrfs subvolume snapshot -r ${snapDir}/plex-current ${snapDir}/${plexSnapName}
+
+# RAID snapshots. Bad Idea
+#btrfs subvolume snapshot -r ${raidDir}/public ${raidSnapDir}/${publicSnapName}
+#btrfs subvolume snapshot -r ${raidDir}/tyler ${raidSnapDir}/${tylerSnapName}
+#btrfs subvolume snapshot -r ${raidDir}/meagan ${raidSnapDir}/${meaganSnapName}
+
+
+# Rsync the "current" home backup
+# rsync -avh --delete ${snapDir}/home-current $backupDir
+# rsync -avh --delete ${snapDir}/root-current $backupDir
+
 
 echo "Creating Root Tarball..."
 cd $snapDir
 tar \
-	-caf ${snapDir}/root-current.tar.xz \
+	-caf ${snapDir}/${rootSnapName}.tar.xz \
 	--checkpoint=10000 \
 	--checkpoint-action=echo="Root: #%u: %T" \
-	root-current 
-mv ${snapDir}/root-current.tar.xz ${backupDir}/
+	${rootSnapName} 
+mv ${snapDir}/${rootSnapName}.tar.xz ${backupDir}/
 
 echo "Creating PLEX Tarball..."
-tar --exclude='plex-current/Library/Application Support/Plex Media Server/Cache' -caf ${snapDir}/plex-current.tar.xz --checkpoint=10000 --checkpoint-action=echo="PLEX: #%u: %T" plex-current
-mv ${snapDir}/plex-current.tar.xz ${backupDir}/
+tar \
+	--exclude=${plexSnapName}/'Library/Application Support/Plex Media Server/Cache' \
+	-caf ${snapDir}/${plexSnapName}.tar.xz \
+	--checkpoint=10000 \
+	--checkpoint-action=echo="PLEX: #%u: %T" \
+	${plexSnapName}
+mv ${snapDir}/${plexSnapName}.tar.xz ${backupDir}/
 
 echo "Creating tyler Tarball..."
-cd home-current/
-tar --exclude='tyler/.cache' -caf ${snapDir}/tyler.tar.xz tyler
-mv ${snapDir}/tyler.tar.xz ${backupDir}/
+cd ${homeSnapName}
+tar \
+	--exclude='tyler/.cache' \
+	-caf ${snapDir}/${tylerSnapName}.tar.xz \
+	tyler
+mv ${snapDir}/${tylerSnapName}.tar.xz ${backupDir}/
+
 
 echo "Creating meagan Tarball..."
-tar -caf ${snapDir}/meagan.tar.xz meagan
-mv ${snapDir}/meagan.tar.xz ${backupDir}/
+tar -caf ${snapDir}/${meaganSnapName}.tar.xz meagan
+mv ${snapDir}/${meaganSnapName}.tar.xz ${backupDir}/
  
 
 # Delete current backup
