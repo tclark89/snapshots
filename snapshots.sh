@@ -45,44 +45,64 @@ btrfs subvolume snapshot -r ${snapDir}/machines-current ${snapDir}/${machinesSna
 # rsync -avh --delete ${snapDir}/root-current $backupDir
 
 
-echo "Creating Root Tarball..."
 cd $snapDir
+echo "Creating Root Tarball..."
 tar \
-	-caf ${snapDir}/${rootSnapName}.tar.xz \
-	--checkpoint=10000 \
-	--checkpoint-action=echo="Root: #%u: %T" \
-	${rootSnapName} 
+	--warning=no-file-ignored \
+	-cf - ${rootSnapName} -P | \
+	pv -s $(du -sb ${rootSnapName} | awk '{print $1}') | \
+	xz > ${snapDir}/${rootSnapName}.tar.xz 
+
+echo "Finished!"
+echo "Moving Root Tarball..."
 mv ${snapDir}/${rootSnapName}.tar.xz ${backupDir}/
+echo "Finished!"
 
 echo "Creating PLEX Tarball..."
 tar \
 	--exclude=${plexSnapName}/'Library/Application Support/Plex Media Server/Cache' \
-	-caf ${snapDir}/${plexSnapName}.tar.xz \
-	--checkpoint=10000 \
-	--checkpoint-action=echo="PLEX: #%u: %T" \
-	${plexSnapName}
+	--warning=no-file-ignored \
+	-cf - ${plexSnapName} -P | \
+	pv -s $(du -sb ${plexSnapName} | awk '{print $1}') | \
+	xz > ${snapDir}/${plexSnapName}.tar.xz 
+echo "Finished!"
+
+echo "Moving PLEX Tarball..."
 mv ${snapDir}/${plexSnapName}.tar.xz ${backupDir}/
+echo "Finished!"
 
 echo "Creating machines Tarball..."
 tar \
-	-caf ${snapDir}/${machinesSnapName}.tar.xz \
-	--checkpoint=1000 \
-	--checkpoint-action=echo"Machines: #%u: %T" \
-	${machinesSnapName}
+	-cf - ${machinesSnapName} -P | \
+	pv -s $(du -sb ${machinesSnapName} | awk '{print $1}') | \
+	xz > ${snapDir}/${machinesSnapName}.tar.xz
+echo "Finished!"
+
+echo "Moving machines Tarball..."
 mv ${snapDir}/${machinesSnapName}.tar.xz ${backupDir}/
+echo "Finished!"
 
 echo "Creating tyler Tarball..."
 cd ${homeSnapName}
 tar \
 	--exclude='tyler/.cache' \
-	-caf ${snapDir}/${tylerSnapName}.tar.xz \
-	tyler
+	-cf - tyler -P | \
+	pv -s $(du -sb tyler | awk '{print $1}') | \
+	xz > ${snapDir}/${tylerSnapName}.tar.xz 
+echo "Finished!"
+
+echo "Moving tyler Tarball..."
 mv ${snapDir}/${tylerSnapName}.tar.xz ${backupDir}/
+echo "Finished!"
 
 
 echo "Creating meagan Tarball..."
 tar -caf ${snapDir}/${meaganSnapName}.tar.xz meagan
+echo "Finished!"
+
+echo "Moving meagan Tarball..."
 mv ${snapDir}/${meaganSnapName}.tar.xz ${backupDir}/
+echo "Finished!"
 
 
 #echo "Rsyncing libvirt images..."
@@ -94,10 +114,13 @@ echo "Rsyncing VM images..."
 rsync -avh --progress ${snapDir}/vms/ ${raidDir}/VMs/
 chown -R tyler ${raidDir}/VMs/
 chgrp -R tyler ${raidDir}/VMs/
+echo "Finished!"
 
+echo "Cleaning up..."
 # Delete current backup
 btrfs subvolume delete ${snapDir}/home-current
 btrfs subvolume delete ${snapDir}/root-current
 btrfs subvolume delete ${snapDir}/plex-current
 #btrfs subvolume delete ${snapDir}/libvirt-images-current
 btrfs subvolume delete ${snapDir}/vms
+echo "Finished!"
