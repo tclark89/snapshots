@@ -23,8 +23,8 @@ export XZ_DEFAULTS="-T 3"
 # Snapshot into "current" folder
 btrfs subvolume snapshot -r /home ${snapDir}/home-current
 btrfs subvolume snapshot -r / ${snapDir}/root-current
-btrfs subvolume snapshot -r /mnt/diskRoot/plexmediaserver/ ${snapDir}/plex-current
-# btrfs subvolume snapshot -r /mnt/diskRoot/libvirt-images/ ${snapDir}/libvirt-images-current
+btrfs subvolume snapshot -r /mnt/disk_root/plexmediaserver/ ${snapDir}/plex-current
+# btrfs subvolume snapshot -r /mnt/disk_root/libvirt-images/ ${snapDir}/libvirt-images-current
 btrfs subvolume snapshot -r /home/tyler/vms/ ${snapDir}/vms
 btrfs subvolume snapshot -r /var/lib/machines/ ${snapDir}/machines-current
 
@@ -121,6 +121,7 @@ echo "Cleaning up..."
 btrfs subvolume delete ${snapDir}/home-current
 btrfs subvolume delete ${snapDir}/root-current
 btrfs subvolume delete ${snapDir}/plex-current
+btrfs subvolume delete ${snapDir}/machines-current
 #btrfs subvolume delete ${snapDir}/libvirt-images-current
 btrfs subvolume delete ${snapDir}/vms
 echo "Finished!"
