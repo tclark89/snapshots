@@ -1,127 +1,101 @@
 #!/bin/bash
-# Set folder names
-timeStamp=$(date '+%Y-%m-%d_%H-%M-%S')
-homeSnapName=home-${timeStamp}
-rootSnapName=root-${timeStamp}
-plexSnapName=plex-${timeStamp}
-libVirtSnapName=libvirt-images-${timeStamp}
-vms_snap_name=vms_${timeStamp}
-publicSnapName=public-${timeStamp}
-tylerSnapName=tyler-${timeStamp}
-meaganSnapName=meagan-${timeStamp}
-machinesSnapName=machines-${timeStamp}
 
-snapDir=/mnt/snapshots
-raidDir=/mnt/RAID
-raidSnapDir=${raidDir}/snapshots
-backupDir=/mnt/RAID/tyler/fileserver
+# Set snapshot names
+time_stamp=$(date '+%Y-%m-%d_%H-%M-%S')
+#home_snap_name=home-${time_stamp}
+root_snap_name=root-${time_stamp}
+plex_snap_name=plex-${time_stamp}
+# machines_snap_name=machines-${time_stamp}
+# libVirtSnapName=libvirt-images-${time_stamp}
+vms_snap_name=virtual_machines_${time_stamp}
+tyler_snap_name=tyler-${time_stamp}
+meagan_snap_name=meagan-${time_stamp}
+
+
+# relevant folders
+raid_folder=/mnt/RAID/
+snap_folder=/mnt/snapshots/
+backup_folder=/mnt/RAID/tyler/fileserver/backups/
 
 # XZ Multithread
 export XZ_DEFAULTS="-T 3"
 
-
-# Snapshot into "current" folder
-btrfs subvolume snapshot -r /home ${snapDir}/home-current
-btrfs subvolume snapshot -r / ${snapDir}/root-current
-btrfs subvolume snapshot -r /mnt/disk_root/plexmediaserver/ ${snapDir}/plex-current
-# btrfs subvolume snapshot -r /mnt/disk_root/libvirt-images/ ${snapDir}/libvirt-images-current
-btrfs subvolume snapshot -r /home/tyler/vms/ ${snapDir}/vms
-btrfs subvolume snapshot -r /var/lib/machines/ ${snapDir}/machines-current
-
-# Also snapshot as dated
-btrfs subvolume snapshot -r ${snapDir}/home-current ${snapDir}/${homeSnapName}
-btrfs subvolume snapshot -r ${snapDir}/root-current ${snapDir}/${rootSnapName}
-btrfs subvolume snapshot -r ${snapDir}/plex-current ${snapDir}/${plexSnapName}
-btrfs subvolume snapshot -r ${snapDir}/machines-current ${snapDir}/${machinesSnapName}
-
-# RAID snapshots. Bad Idea
-#btrfs subvolume snapshot -r ${raidDir}/public ${raidSnapDir}/${publicSnapName}
-#btrfs subvolume snapshot -r ${raidDir}/tyler ${raidSnapDir}/${tylerSnapName}
-#btrfs subvolume snapshot -r ${raidDir}/meagan ${raidSnapDir}/${meaganSnapName}
+# Create snapshots
+btrfs subvolume snapshot -r /home/tyler ${snap_folder}/${tyler_snap_name}
+btrfs subvolume snapshot -r /home/meagan ${snap_folder}/${meagan_snap_name}
+btrfs subvolume snapshot -r / ${snap_folder}/${root_snap_name}
+btrfs subvolume snapshot -r /srv/plex/ ${snap_folder}/${plex_snap_name}
+btrfs subvolume snapshot -r /srv/virtual_machines/ ${snap_folder}/${vms_snap_name}
+#btrfs subvolume snapshot -r /var/lib/machines/ ${snap_folder}/${machines_snap_name}
 
 
-# Rsync the "current" home backup
-# rsync -avh --delete ${snapDir}/home-current $backupDir
-# rsync -avh --delete ${snapDir}/root-current $backupDir
-
-
-cd $snapDir
+cd $snap_folder
 echo "Creating Root Tarball..."
 tar \
 	--warning=no-file-ignored \
-	-cf - ${rootSnapName} -P | \
-	pv -s $(du -sb ${rootSnapName} | awk '{print $1}') | \
-	xz > ${snapDir}/${rootSnapName}.tar.xz 
+	-caPf ${snap_folder}/${root_snap_name}.tar.xz ${root_snap_name}
 
+chown tyler ${snap_folder}/${root_snap_name}.tar.xz
+chgrp tyler ${snap_folder}/${root_snap_name}.tar.xz
+mv ${snap_folder}/${root_snap_name}.tar.xz ${backup_folder}/
 echo "Finished!"
-echo "Moving Root Tarball..."
-mv ${snapDir}/${rootSnapName}.tar.xz ${backupDir}/
-echo "Finished!"
+
+#echo "Syncing Plex"
+#rsync -avh ${snap_folder}/${plex_snap_name}/ /mnt/RAID/tyler/fileserver/plex/ 
+#echo "Finished!"
+
 
 echo "Creating PLEX Tarball..."
 tar \
-	--exclude=${plexSnapName}/'Library/Application Support/Plex Media Server/Cache' \
 	--warning=no-file-ignored \
-	-cf - ${plexSnapName} -P | \
-	pv -s $(du -sb ${plexSnapName} | awk '{print $1}') | \
-	xz > ${snapDir}/${plexSnapName}.tar.xz 
+	-caPf ${snap_folder}/${plex_snap_name}.tar.xz ${plex_snap_name}
+
+chown tyler ${snap_folder}/${plex_snap_name}.tar.xz
+chgrp tyler ${snap_folder}/${plex_snap_name}.tar.xz
+mv ${snap_folder}/${plex_snap_name}.tar.xz ${backup_folder}/
 echo "Finished!"
 
-echo "Moving PLEX Tarball..."
-mv ${snapDir}/${plexSnapName}.tar.xz ${backupDir}/
-echo "Finished!"
-
-echo "Creating machines Tarball..."
-tar \
-	-cf - ${machinesSnapName} -P | \
-	pv -s $(du -sb ${machinesSnapName} | awk '{print $1}') | \
-	xz > ${snapDir}/${machinesSnapName}.tar.xz
-echo "Finished!"
-
-echo "Moving machines Tarball..."
-mv ${snapDir}/${machinesSnapName}.tar.xz ${backupDir}/
-echo "Finished!"
+#echo "Creating machines Tarball..."
+#tar \
+#	-caPf ${snap_folder}/${machines_snap_name}.tar.xz ${machines_snap_name}
+#
+#chown tyler ${snap_folder}/${machines_snap_name}.tar.xz
+#chgrp tyler ${snap_folder}/${machines_snap_name}.tar.xz
+#mv ${snap_folder}/${machines_snap_name}.tar.xz ${backup_folder}/
+#echo "Finished!"
 
 echo "Creating tyler Tarball..."
-cd ${homeSnapName}
 tar \
 	--exclude='tyler/.cache' \
-	-cf - tyler -P | \
-	pv -s $(du -sb tyler | awk '{print $1}') | \
-	xz > ${snapDir}/${tylerSnapName}.tar.xz 
-echo "Finished!"
+	-caPf ${snap_folder}/${tyler_snap_name}.tar.xz $tyler_snap_name 
 
-echo "Moving tyler Tarball..."
-mv ${snapDir}/${tylerSnapName}.tar.xz ${backupDir}/
+chown tyler ${snap_folder}/${tyler_snap_name}.tar.xz
+chgrp tyler ${snap_folder}/${tyler_snap_name}.tar.xz
+mv ${snap_folder}/${tyler_snap_name}.tar.xz ${backup_folder}/
 echo "Finished!"
 
 
 echo "Creating meagan Tarball..."
-tar -caf ${snapDir}/${meaganSnapName}.tar.xz meagan
+tar -caf ${snap_folder}/${meagan_snap_name}.tar.xz $meagan_snap_name
+
+chown tyler ${snap_folder}/${meagan_snap_name}.tar.xz
+chgrp tyler ${snap_folder}/${meagan_snap_name}.tar.xz
+mv ${snap_folder}/${meagan_snap_name}.tar.xz ${backup_folder}/
 echo "Finished!"
 
-echo "Moving meagan Tarball..."
-mv ${snapDir}/${meaganSnapName}.tar.xz ${backupDir}/
-echo "Finished!"
-
-
-#echo "Rsyncing libvirt images..."
-#rsync -avh --progress ${snapDir}/libvirt-images-current/ ${raidDir}/VMs/libvirt-images/
-#chown -R tyler ${raidDir}/VMs/
-#chgrp -R tyler ${raidDir}/VMs/
 
 echo "Rsyncing VM images..."
-rsync -avh --progress ${snapDir}/vms/ ${raidDir}/VMs/
-chown -R tyler ${raidDir}/VMs/
-chgrp -R tyler ${raidDir}/VMs/
+rsync -avh --progress ${snap_folder}/${vms_snap_name}/ ${raid_folder}/virtual_machines/
+#chown -R tyler ${raid_folder}/virtual_machines/
+#chgrp -R tyler ${raid_folder}/virtual_machines/
 echo "Finished!"
 
 echo "Cleaning up..."
 # Delete current backup
-btrfs subvolume delete ${snapDir}/home-current
-btrfs subvolume delete ${snapDir}/root-current
-btrfs subvolume delete ${snapDir}/plex-current
-btrfs subvolume delete ${snapDir}/machines-current
-#btrfs subvolume delete ${snapDir}/libvirt-images-current
-btrfs subvolume delete ${snapDir}/vms
+btrfs subvolume delete ${snap_folder}/${tyler_snap_name}
+btrfs subvolume delete ${snap_folder}/${meagan_snap_name}
+btrfs subvolume delete ${snap_folder}/${root_snap_name}
+btrfs subvolume delete ${snap_folder}/${plex_snap_name}
+#btrfs subvolume delete ${snap_folder}/${machines_snap_name}
+btrfs subvolume delete ${snap_folder}/${vms_snap_name}
 echo "Finished!"
