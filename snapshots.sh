@@ -87,7 +87,7 @@ echo "Finished!"
 
 
 echo "Rsyncing VM images..."
-rsync -avh --progress ${snap_folder}/${vms_snap_name}/ ${raid_folder}/virtual_machines/
+rsync -avh --progress ${snap_folder}/${vms_snap_name}/ /mnt/virtual_machines/
 #chown -R tyler ${raid_folder}/virtual_machines/
 #chgrp -R tyler ${raid_folder}/virtual_machines/
 echo "Finished!"
