@@ -14,7 +14,7 @@ vms_snap_name=virtual_machines_${time_stamp}
 
 # relevant folders
 raid_folder=/mnt/RAID/
-snap_folder=/mnt/snapshots/
+snap_folder=/snapshots/
 backup_folder=/mnt/RAID/tyler/fileserver/backups/
 
 # XZ Multithread
