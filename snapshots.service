@@ -1,0 +1,6 @@
+[Unit]
+Description=Backup volumes to tarballs
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /usr/local/bin/snapshots.sh

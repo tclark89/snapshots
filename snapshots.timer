@@ -1,0 +1,9 @@
+[Unit]
+Description=Run backups script weekly
+
+[Timer]
+OnCalendar=Sun *-*-* 00:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
