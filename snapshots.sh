@@ -13,7 +13,6 @@ vms_snap_name=virtual_machines_${time_stamp}
 
 
 # relevant folders
-raid_folder=/mnt/RAID/
 snap_folder=/snapshots/
 backup_folder=/mnt/tyler/fileserver/backups/
 
@@ -41,9 +40,6 @@ chgrp tyler ${snap_folder}/${root_snap_name}.tar.xz
 mv ${snap_folder}/${root_snap_name}.tar.xz ${backup_folder}/
 echo "Finished!"
 
-#echo "Syncing Plex"
-#rsync -avh ${snap_folder}/${plex_snap_name}/ /mnt/RAID/tyler/fileserver/plex/ 
-#echo "Finished!"
 echo "Creating Docker Tarball..."
 tar \
 	--warning=no-file-ignored \
@@ -87,9 +83,7 @@ echo "Finished!"
 
 
 echo "Rsyncing VM images..."
-rsync -avh --progress ${snap_folder}/${vms_snap_name}/ /mnt/virtual_machines/
-#chown -R tyler ${raid_folder}/virtual_machines/
-#chgrp -R tyler ${raid_folder}/virtual_machines/
+rsync -avhAEXH  ${snap_folder}/${vms_snap_name}/ /mnt/virtual_machines/
 echo "Finished!"
 
 echo "Cleaning up..."
